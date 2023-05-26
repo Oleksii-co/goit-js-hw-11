@@ -7,38 +7,85 @@ const form = document.getElementById("search-form");
 const inputEl = document.querySelector("input[name=searchQuery]");
 const btnEL = document.querySelector("button[type=submit]");
 const divEL = document.querySelector(".gallery");
+const addMoreBtn = document.querySelector(".load-more");
 
+let page = 1;
+let searchValue = "";
+
+hideLoadMoreBtn()
 
 form.addEventListener("submit",onFormSubmit)
+
+addMoreBtn.addEventListener("click",loadMore)
+
 
 Notify.init({
     fontSize: '16px',
     width: '300px',
   });
   
-
-
 function onFormSubmit(evt) {
+  hideLoadMoreBtn()
     evt.preventDefault();
 
-    const query = evt.currentTarget.elements.searchQuery.value.trim()
 
-searchImages(query).then(({hits})=>{
+    const query = evt.currentTarget.elements.searchQuery.value.trim();
+    searchValue = query;
+    page = 1;
+    divEL.innerHTML = "";
 
-    if (hits.length === 0) {
-        Notify.info(
-            "Sorry, there are no images matching your search query. Please try again."
-          );
+searchImages(searchValue,page).then((res)=>{
+    Notify.info(
+      `Hooray! We found ${res.totalHits} images.`
+    );
+    return res;
+   }).then(({hits})=>{
+    
+    renderMarkup(hits);
+    showLoadMoreBtn();
+  
+    if (hits.length < 40 && hits.length > 0) {
+      hideLoadMoreBtn()
     }
-
-    renderMarkup(hits)  
+      if (hits.length === 0) {
+        hideLoadMoreBtn();
+  
+          Notify.failure(
+              "Sorry, there are no images matching your search query. Please try again."
+            );
+      }
+  })
+.finally(()=>{
+  form.reset()
 })
 }
 
 
+function loadMore() {
+  page += 1;
+  searchImages(searchValue,page).then(({hits})=>{
+      
+      renderMarkup(hits);
+      showLoadMoreBtn();
+    
+      if (hits.length < 40 && hits.length > 0) {
+        hideLoadMoreBtn()
+        Notify.info(
+          "We're sorry, but you've reached the end of search results."
+        );
+      }
+        if (hits.length === 0) {
+          hideLoadMoreBtn();
+    
+            Notify.failure(
+                "Sorry, there are no images matching your search query. Please try again."
+              );
+        }
+    })
+}
+
 
 function renderMarkup(img) {
-
     const markup = img.map((img) =>{
         return `<div class="photo-card">
         <img src="${img.webformatURL}" alt="${img.tags}" loading="lazy" />
@@ -60,7 +107,14 @@ function renderMarkup(img) {
       `
     }).join('');
 
-    divEL.innerHTML = markup;
+    // divEL.innerHTML = markup;
+    divEL.insertAdjacentHTML("beforeend", markup)
 }
 
+function showLoadMoreBtn() {
+  addMoreBtn.classList.remove("hidden")
 
+}
+function hideLoadMoreBtn() {
+  addMoreBtn.classList.add("hidden");
+}
