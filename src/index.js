@@ -35,9 +35,11 @@ function onFormSubmit(evt) {
     divEL.innerHTML = "";
 
 searchImages(searchValue,page).then((res)=>{
+  if (res.totalHits > 1) {
     Notify.info(
       `Hooray! We found ${res.totalHits} images.`
     );
+  }
     return res;
    }).then(({hits})=>{
     
